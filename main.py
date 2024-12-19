@@ -92,7 +92,7 @@ class UsinaInterface(QMainWindow):
                 raise ValueError("Função para a usina selecionada não encontrada!")
 
             # Exibir mensagem de sucesso
-            QMessageBox.information(self, "Sucesso", f"Função da usina {usina} chamada com sucesso!")
+            QMessageBox.information(self, "Sucesso", f"Planilha BD_AGRO da usina {usina} exportada com sucesso!")
         except AttributeError:
             QMessageBox.critical(self, "Erro", f"Função para {usina} não definida no módulo 'usinas'.")
         except Exception as e:
