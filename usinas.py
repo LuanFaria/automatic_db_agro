@@ -1,11 +1,11 @@
 #pretendo criar uma função para cada usina
 import pandas as pd
 import numpy as np
+import locale
 
 #SANTA ADELIA
 def santa_adelia():
     #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
-
     lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
     banco_usa = pd.read_xml('estimativa_safra_202412101713.xml')
     estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
@@ -17,12 +17,9 @@ def santa_adelia():
 
     #remover spot e renomear PRÓPRIAS e FORNECEDORES
     bd_usa = bd_usa[bd_usa['tp_prop'] != 'SPOT'].reset_index(drop=True)
-
     bd_usa['tp_prop'] = bd_usa['tp_prop'].replace({
         'PRÓPRIA': 'PRÓPRIAS',
-        'FORNECEDOR': 'FORNECEDORES'
-    })
-    
+        'FORNECEDOR': 'FORNECEDORES'})  
     #verificar se tem duplicados 
     numero_duplicados = bd_usa['id'].duplicated().sum()
     print(f'Número de duplicatas na coluna "id": {numero_duplicados}')
@@ -99,14 +96,36 @@ def santa_adelia():
     bd_agro['A_COLHIDA'] = np.select([bd_usa['fg_ocorren'] == 'F'], [bd_agro['A_EST_MOAGEM']], default=0)
     bd_agro['A_EST_MUDA'] = bd_usa['area_est_mud']
     bd_agro['A_MUDA'] = np.select([bd_usa['fg_ocorren'] == 'F'], [bd_agro['A_EST_MUDA']], default=0)
-
-    
-
-    
+    bd_usa = bd_usa.replace('.',',').astype({'tch_rest': float, 'tch_est': float})
+    bd_agro['TCH_EST'] = np.select([(bd_agro['A_EST_MOAGEM'] > 0)& (bd_usa['tch_rest'].isna()),(bd_agro['A_EST_MOAGEM'] > 0) & (bd_usa['tch_rest'] > 0)],[bd_usa['tch_est'],bd_usa['tch_rest']],default=0)
+    bd_agro['TC_EST'] = bd_agro['TCH_EST'] * bd_agro['A_EST_MOAGEM']
+    bd_agro['TCH_REST'] = np.select([(bd_agro['OBJETIVO'] == 'MOAGEM/MUDA') | (bd_agro['OBJETIVO'] == 'MOAGEM') ], [bd_usa['tch_est']], default=0)
+    bd_agro['TC_REST'] = bd_agro['TCH_REST'] * bd_agro['A_EST_MOAGEM']
+    bd_usa['cana_ent'] = bd_usa['cana_ent'].astype(str).str.replace(r'\.', '', regex=True)
+    bd_usa['cana_ent'] = bd_usa['cana_ent'].str.replace(',', '.')
+    bd_usa['cana_ent'] = pd.to_numeric(bd_usa['cana_ent'], errors='coerce')
+    bd_agro['TCH_REAL'] = np.select([bd_usa['fg_ocorren'] == 'F'], [bd_usa['cana_ent']/bd_usa['area_est_col']], default=0)
+    bd_agro['TC_REAL'] = bd_agro['TCH_REAL'] * bd_agro['A_COLHIDA']
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')  # Para exibir a data em português
+    bd_agro['DT_CORTE'] = pd.to_datetime(bd_usa['dt_corte_atual'], format='%d/%m/%Y', errors='coerce')
+    bd_agro['DT_ULT_CORTE'] = pd.to_datetime(bd_usa['dt_corte_anterior'], format='%d/%m/%Y', errors='coerce')
+    bd_agro['DT_PLANTIO'] = pd.to_datetime(bd_usa['dt_plantio'], format='%d/%m/%Y', errors='coerce')
+    bd_agro['DT_CORTE'] = bd_agro['DT_CORTE'].dt.date
+    bd_agro['DT_ULT_CORTE'] = bd_agro['DT_ULT_CORTE'].dt.date
+    bd_agro['DT_PLANTIO'] = bd_agro['DT_PLANTIO'].dt.date
+    bd_agro['DT_ULT_CORTE'] = np.select([bd_agro['NMRO_CORTE'] != 1], [bd_agro['DT_ULT_CORTE']], default=pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_CORTE'] = bd_agro['DT_CORTE'].fillna(pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_ULT_CORTE'] = bd_agro['DT_ULT_CORTE'].fillna(pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_PLANTIO'] = bd_agro['DT_PLANTIO'].fillna(pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_CORTE'] = pd.to_datetime(bd_agro['DT_CORTE'])
+    bd_agro['DT_PLANTIO'] = pd.to_datetime(bd_agro['DT_PLANTIO'])
+    bd_agro['DT_ULT_CORTE'] = pd.to_datetime(bd_agro['DT_ULT_CORTE'])
+    bd_agro['IDADE_CORTE'] = np.where(
+        bd_agro['NMRO_CORTE'] == 1,
+        (bd_agro['DT_CORTE'] - bd_agro['DT_PLANTIO']).dt.days / 30,
+        (bd_agro['DT_CORTE'] - bd_agro['DT_ULT_CORTE']).dt.days / 30)
+    bd_agro.loc[(bd_agro['IDADE_CORTE'] > 35) | (bd_agro['IDADE_CORTE'] < 0), 'IDADE_CORTE'] = 0    
     bd_agro.to_excel('BD_AGRO_USA.xlsx', index=False)
-    
-
-
 
 #ESTIVA
 def estiva():
@@ -114,7 +133,7 @@ def estiva():
 
 #PEDRA
 def pedra():
-    print('pedra')
+    print('vai toma no ku')
 
 #COCAL
 def cocal():
