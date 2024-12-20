@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QColor, QPalette
 from PyQt5.QtCore import Qt
-import usinas  # Certifique-se de que o módulo `usinas` está no mesmo diretório ou no PYTHONPATH
+import usinas  
 
 
 class UsinaInterface(QMainWindow):
@@ -64,7 +64,7 @@ class UsinaInterface(QMainWindow):
         self.set_palette()
 
     def set_palette(self):
-        """Configurar cores para a interface."""
+       
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor("#E3F2FD"))  # Fundo azul claro
         palette.setColor(QPalette.WindowText, QColor("#0D47A1"))  # Texto azul escuro
@@ -75,7 +75,7 @@ class UsinaInterface(QMainWindow):
         self.setPalette(palette)
 
     def selecionar_usina(self):
-        """Chamar a função correspondente à usina selecionada."""
+        
         usina = self.combo_box.currentText()
       
 
@@ -91,7 +91,7 @@ class UsinaInterface(QMainWindow):
             else:
                 raise ValueError("Função para a usina selecionada não encontrada!")
 
-            # Exibir mensagem de sucesso
+       
             QMessageBox.information(self, "Sucesso", f"Planilha BD_AGRO da usina {usina} exportada com sucesso!")
         except AttributeError:
             QMessageBox.critical(self, "Erro", f"Função para {usina} não definida no módulo 'usinas'.")
