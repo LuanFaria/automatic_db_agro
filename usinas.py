@@ -6,8 +6,9 @@ import locale
 #SANTA ADELIA
 def santa_adelia():
     #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
+
     lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
-    banco_usa = pd.read_xml('estimativa_safra_202412101713.xml')
+    banco_usa = pd.read_xml('input/estimativa_safra_202412101713.xml')
     estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
     bd_usa = banco_usa.drop(labels=['usina','blocoicol','de_obs','no_corte','categoria','rest','gr_est','fornecedor','municipio','quad','qt_area_prod','qt_area_muda','qt_area_dano','idade_corte','idade_atual','fg_refor_plane','fg_temporario','fg_dano_colheita','fg_meiosi','dt_ocorren','n_rest','id_unidade','updated_at','created_at'], axis=1)
     bd_agro = pd.DataFrame(columns=lista_bd_agro)
@@ -17,9 +18,12 @@ def santa_adelia():
 
     #remover spot e renomear PRÓPRIAS e FORNECEDORES
     bd_usa = bd_usa[bd_usa['tp_prop'] != 'SPOT'].reset_index(drop=True)
+
     bd_usa['tp_prop'] = bd_usa['tp_prop'].replace({
         'PRÓPRIA': 'PRÓPRIAS',
-        'FORNECEDOR': 'FORNECEDORES'})  
+        'FORNECEDOR': 'FORNECEDORES'
+    })
+    
     #verificar se tem duplicados 
     numero_duplicados = bd_usa['id'].duplicated().sum()
     print(f'Número de duplicatas na coluna "id": {numero_duplicados}')
@@ -125,15 +129,115 @@ def santa_adelia():
         (bd_agro['DT_CORTE'] - bd_agro['DT_PLANTIO']).dt.days / 30,
         (bd_agro['DT_CORTE'] - bd_agro['DT_ULT_CORTE']).dt.days / 30)
     bd_agro.loc[(bd_agro['IDADE_CORTE'] > 35) | (bd_agro['IDADE_CORTE'] < 0), 'IDADE_CORTE'] = 0    
-    bd_agro.to_excel('BD_AGRO_USA.xlsx', index=False)
+    bd_agro.to_excel('output/BD_AGRO_USA.xlsx', index=False)
+    
+
 
 #ESTIVA
 def estiva():
-    print('Estiva')
+    #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
+    lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
+    banco_estiva = pd.read_csv('input/TALHAO_PDUOS_202501101026.csv', sep = ';', encoding = 'utf-8')
+    estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
+    bd_estiva = banco_estiva.drop(labels=['SOLO', 'ESPACAMENTO', 'DISTANCIA', 'A_REFORMA', 'A_TIPO_APLIC_VINHACA', 'ID_DIVI4'], axis=1)
+    bd_agro = pd.DataFrame(columns=lista_bd_agro)
+
+    #concatenar ID
+    bd_estiva['id'] = bd_estiva['FAZENDA'].astype(str) + '_' + bd_estiva['SECAO'].astype(str) + '_' + bd_estiva['TALHAO'].astype(str)
+
+    #renomear tp_prop
+    bd_estiva['TP_PROP'] = bd_estiva['TP_PROP'].replace({
+    'CANA PROPRIA': 'PRÓPRIAS',
+    'FORNECEDOR': 'FORNECEDORES'})
+
+    #remover outras safras
+    bd_estiva = bd_estiva.loc[bd_estiva['SAFRA'] != 2024]
+
+    #verificar se tem duplicados 
+    numero_duplicados = bd_estiva['id'].duplicated().sum()
+    print(f'Número de duplicatas na coluna "id": {numero_duplicados}')
+
+    # Definindo as condições de objetivo
+    condicoes = [
+        (bd_estiva['ESTAGIO'] == 'PLANTIO'),
+        (bd_estiva['ESTAGIO'] == 'TEMPORARIO'),
+        (bd_estiva['OBJETIVO'] == 'MOAGEM'),
+        (bd_estiva['OBJETIVO'] == 'MUDA'),
+        (bd_estiva['A_MUDA'] > 0) & (bd_estiva['A_EST_MOAGEM'] > 0),
+        (bd_estiva['A_MUDA'] > 0) & (bd_estiva['A_EST_MOAGEM'] == 0)]
+
+    # Definindo os valores correspondentes para cada condição
+    valores = ['PLANTIO', 'TEMPORARIO', 'MOAGEM', 'MUDA', 'MOAGEM/MUDA','MUDA']
+
+    # Aplicando as condições e atribuindo o valor na nova coluna 'OBJETIVO'
+    bd_estiva['OBJETIVO'] = np.select(condicoes, valores, default='ADEF')
+
+    bd_estiva = bd_estiva[bd_estiva['OBJETIVO'] != 'ADEF'].reset_index(drop=True)
+
+    #esses adef são areas de dano
+    contagem_objetivos = bd_estiva['OBJETIVO'].value_counts()
+    print(contagem_objetivos)
+
+    # Ajuste o nome da coluna, se necessário
+    coluna_estagios = 'ESTAGIO'  # Substitua pelo nome correto se for diferente
+
+    # Realizando o merge
+    bd_estiva = pd.merge(
+        bd_estiva,
+        estagios,
+        left_on='ESTAGIO',  # Coluna no bd_estiva
+        right_on=coluna_estagios,  # Coluna no estagios
+        how='left'
+    )
+
+    # Removendo a coluna duplicada se necessário
+    if coluna_estagios in bd_estiva.columns:
+        bd_estiva.drop(columns=[coluna_estagios], inplace=True)
+
+    bd_agro['CHAVE'] = bd_estiva['id']
+    bd_agro['CLIENTE'] = bd_estiva['CLIENTE']
+    bd_agro['SAFRA'] = bd_agro['SAFRA']
+    bd_agro['OBJETIVO'] = bd_estiva['OBJETIVO']
+    bd_agro['TP_PROP'] = bd_estiva['TP_PROP']
+    bd_agro['FAZENDA'] = bd_estiva['FAZENDA']
+    bd_agro['SETOR'] = bd_estiva['SETOR']
+    bd_agro['SECAO'] = bd_estiva['SECAO']
+    bd_agro['BLOCO'] = ''
+    bd_agro['PIVO'] = ''
+    bd_agro['DESC_FAZ'] = bd_estiva['DSC_FAZENDA']
+    bd_agro['TALHAO'] = bd_estiva['TALHAO']
+    bd_agro['VARIEDADE'] = bd_estiva['VARIEDADE'] 
+    bd_agro['MATURACAO'] = bd_estiva['MATURACAO']
+    bd_agro['AMBIENTE'] = bd_estiva['AMBIENTE']
+    bd_agro['IRRIGACAO'] = bd_estiva['IRRIGACAO']
+    bd_agro['ESTAGIO'] = bd_estiva['ESTAGIO_24']
+    bd_agro['GRUPO_DASH'] = bd_estiva['GRUPO_DASH'] 
+    bd_agro['GRUPO_NDVI'] = bd_estiva['GRUPO_NDVI']
+    bd_agro['NMRO_CORTE'] = bd_estiva['NMRO_CORTE']
+    bd_agro['DESC_CANA'] = bd_estiva['DESC_CANA']
+    bd_agro['AREA_BD'] = bd_estiva['AREA_BD']
+    bd_agro['A_EST_MOAGEM'] = bd_estiva['A_EST_MOAGEM']
+    bd_agro['A_COLHIDA'] = bd_estiva['A_COLHIDA']
+    bd_agro['A_EST_MUDA'] = bd_estiva['A_MUDA']
+    bd_agro['A_MUDA'] = bd_estiva['A_MUDA']
+    bd_estiva = bd_estiva.replace('.',',')
+    bd_agro['TCH_EST'] = bd_estiva['TCH_EST']
+    bd_agro['TC_EST'] =bd_agro['A_EST_MOAGEM'] * bd_estiva['TCH_EST']
+    bd_agro['TCH_REST'] = ''
+    bd_agro['TC_REST'] = ''
+    bd_agro['TCH_REAL'] = np.select([bd_estiva['STATUS_TALHAO'] == 'ENCERRADA'], [bd_estiva['TCH_REAL']], default=0)
+    bd_agro['TC_REAL'] = np.select([bd_agro['TCH_REAL']>0], [bd_agro['TCH_REAL'] * bd_agro['A_COLHIDA']], default=0)
+
+
+    #gerando excel
+    bd_agro.to_excel('output/BD_AGRO_ESTIVA.xlsx', index=False)
+
+
+
 
 #PEDRA
 def pedra():
-    print('vai toma no ku')
+    print('pedra')
 
 #COCAL
 def cocal():
