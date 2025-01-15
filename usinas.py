@@ -131,13 +131,11 @@ def santa_adelia():
     bd_agro.loc[(bd_agro['IDADE_CORTE'] > 35) | (bd_agro['IDADE_CORTE'] < 0), 'IDADE_CORTE'] = 0    
     bd_agro.to_excel('output/BD_AGRO_USA.xlsx', index=False)
     
-
-
 #ESTIVA
 def estiva():
     #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
     lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
-    banco_estiva = pd.read_csv('input/TALHAO_PDUOS_202501101026.csv', sep = ';', encoding = 'utf-8')
+    banco_estiva = pd.read_csv('input/TALHAO_PDUOS_202501151415.csv', sep = ';', encoding = 'utf-8')
     estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
     bd_estiva = banco_estiva.drop(labels=['SOLO', 'ESPACAMENTO', 'DISTANCIA', 'A_REFORMA', 'A_TIPO_APLIC_VINHACA', 'ID_DIVI4'], axis=1)
     bd_agro = pd.DataFrame(columns=lista_bd_agro)
@@ -152,6 +150,7 @@ def estiva():
 
     #remover outras safras
     bd_estiva = bd_estiva.loc[bd_estiva['SAFRA'] != 2024]
+    bd_estiva = bd_estiva.loc[bd_estiva['TP_PROP'] != 'FORNECEDORES']
 
     #verificar se tem duplicados 
     numero_duplicados = bd_estiva['id'].duplicated().sum()
@@ -195,8 +194,8 @@ def estiva():
         bd_estiva.drop(columns=[coluna_estagios], inplace=True)
 
     bd_agro['CHAVE'] = bd_estiva['id']
-    bd_agro['CLIENTE'] = bd_estiva['CLIENTE']
-    bd_agro['SAFRA'] = bd_agro['SAFRA']
+    bd_agro['CLIENTE'] = 'USINA ESTIVA'
+    bd_agro['SAFRA'] = bd_estiva['SAFRA']
     bd_agro['OBJETIVO'] = bd_estiva['OBJETIVO']
     bd_agro['TP_PROP'] = bd_estiva['TP_PROP']
     bd_agro['FAZENDA'] = bd_estiva['FAZENDA']
@@ -227,12 +226,25 @@ def estiva():
     bd_agro['TC_REST'] = ''
     bd_agro['TCH_REAL'] = np.select([bd_estiva['STATUS_TALHAO'] == 'ENCERRADA'], [bd_estiva['TCH_REAL']], default=0)
     bd_agro['TC_REAL'] = np.select([bd_agro['TCH_REAL']>0], [bd_agro['TCH_REAL'] * bd_agro['A_COLHIDA']], default=0)
-
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')  # Para exibir a data em português
+    bd_agro['DT_CORTE'] = bd_estiva['DT_CORTE']
+    bd_agro['DT_ULT_CORTE'] = bd_estiva['DT_ULT_CORTE']
+    bd_agro['DT_PLANTIO'] = bd_estiva['DT_PLANTIO']
+    bd_agro['DT_ULT_CORTE'] = np.select([bd_agro['NMRO_CORTE'] != 1], [bd_agro['DT_ULT_CORTE']], default=pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_CORTE'] = bd_agro['DT_CORTE'].fillna(pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_ULT_CORTE'] = bd_agro['DT_ULT_CORTE'].fillna(pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_PLANTIO'] = bd_agro['DT_PLANTIO'].fillna(pd.to_datetime('1900-01-01').date())
+    bd_agro['DT_CORTE'] = pd.to_datetime(bd_agro['DT_CORTE'])
+    bd_agro['DT_PLANTIO'] = pd.to_datetime(bd_agro['DT_PLANTIO'])
+    bd_agro['DT_ULT_CORTE'] = pd.to_datetime(bd_agro['DT_ULT_CORTE'])
+    bd_agro['IDADE_CORTE'] = np.where(
+    bd_agro['NMRO_CORTE'] == 1,
+        (bd_agro['DT_CORTE'] - bd_agro['DT_PLANTIO']).dt.days / 30,
+        (bd_agro['DT_CORTE'] - bd_agro['DT_ULT_CORTE']).dt.days / 30)
+    bd_agro.loc[(bd_agro['IDADE_CORTE'] > 35) | (bd_agro['IDADE_CORTE'] < 0), 'IDADE_CORTE'] = 0  
 
     #gerando excel
     bd_agro.to_excel('output/BD_AGRO_ESTIVA.xlsx', index=False)
-
-
 
 
 #PEDRA
