@@ -4,11 +4,11 @@ import numpy as np
 import locale
 
 #SANTA ADELIA
-def santa_adelia():
+def santa_adelia(view_usina):
     #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
 
     lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
-    banco_usa = pd.read_xml('input/estimativa_safra_202412101713.xml')
+    banco_usa = pd.read_xml('input/'+view_usina+'.xml')
     estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
     bd_usa = banco_usa.drop(labels=['usina','blocoicol','de_obs','no_corte','categoria','rest','gr_est','fornecedor','municipio','quad','qt_area_prod','qt_area_muda','qt_area_dano','idade_corte','idade_atual','fg_refor_plane','fg_temporario','fg_dano_colheita','fg_meiosi','dt_ocorren','n_rest','id_unidade','updated_at','created_at'], axis=1)
     bd_agro = pd.DataFrame(columns=lista_bd_agro)
@@ -132,10 +132,10 @@ def santa_adelia():
     bd_agro.to_excel('output/BD_AGRO_USA.xlsx', index=False)
     
 #ESTIVA
-def estiva():
+def estiva(view_usina):
     #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
     lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
-    banco_estiva = pd.read_csv('input/TALHAO_PDUOS_202501151415.csv', sep = ';', encoding = 'utf-8')
+    banco_estiva = pd.read_csv('input/'+view_usina+'.csv', sep = ';', encoding = 'utf-8')
     estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
     bd_estiva = banco_estiva.drop(labels=['SOLO', 'ESPACAMENTO', 'DISTANCIA', 'A_REFORMA', 'A_TIPO_APLIC_VINHACA', 'ID_DIVI4'], axis=1)
     bd_agro = pd.DataFrame(columns=lista_bd_agro)
