@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QMessageBox,
     QLabel,
+    QLineEdit,
 )
 from PyQt5.QtGui import QFont, QColor, QPalette
 from PyQt5.QtCore import Qt
@@ -18,7 +19,7 @@ class UsinaInterface(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Selecionar Usina")
-        self.setGeometry(100, 100, 500, 300)
+        self.setGeometry(100, 100, 500, 400)
 
         # Lista de usinas
         self.lista_usina = ["Santa Adélia", "Estiva", "Pedra", "Cocal"]
@@ -34,6 +35,16 @@ class UsinaInterface(QMainWindow):
         self.title_label.setFont(QFont("Arial", 20, QFont.Bold))
         self.title_label.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.title_label)
+
+        # # Campo para o usuário inserir o valor de view_usina
+        # self.view_usina_label = QLabel("Digite o valor de 'view_usina':")
+        # self.view_usina_label.setFont(QFont("Arial", 12))
+        # self.layout.addWidget(self.view_usina_label)
+
+        self.view_usina_input = QLineEdit()
+        self.view_usina_input.setFont(QFont("Arial", 12))
+        self.view_usina_input.setPlaceholderText("Nome da planilha - Exemplo: estimativa_safra_202412101713")
+        self.layout.addWidget(self.view_usina_input)
 
         # ComboBox para exibir as usinas
         self.combo_box = QComboBox()
@@ -64,7 +75,6 @@ class UsinaInterface(QMainWindow):
         self.set_palette()
 
     def set_palette(self):
-       
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor("#E3F2FD"))  # Fundo azul claro
         palette.setColor(QPalette.WindowText, QColor("#0D47A1"))  # Texto azul escuro
@@ -75,23 +85,25 @@ class UsinaInterface(QMainWindow):
         self.setPalette(palette)
 
     def selecionar_usina(self):
-        
         usina = self.combo_box.currentText()
-      
+        view_usina = self.view_usina_input.text().strip()
+
+        if not view_usina:
+            QMessageBox.warning(self, "Aviso", "Por favor, insira um valor para 'view_usina'.")
+            return
 
         try:
             if usina == "Santa Adélia":
-                usinas.santa_adelia()
+                usinas.santa_adelia(view_usina)
             elif usina == "Estiva":
-                usinas.estiva()
+                usinas.estiva(view_usina)
             elif usina == "Pedra":
-                usinas.pedra()
+                usinas.pedra(view_usina)
             elif usina == "Cocal":
-                usinas.cocal()
+                usinas.cocal(view_usina)
             else:
                 raise ValueError("Função para a usina selecionada não encontrada!")
 
-       
             QMessageBox.information(self, "Sucesso", f"Planilha BD_AGRO da usina {usina} exportada com sucesso!")
         except AttributeError:
             QMessageBox.critical(self, "Erro", f"Função para {usina} não definida no módulo 'usinas'.")
