@@ -13,8 +13,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont, QColor, QPalette
 from PyQt5.QtCore import Qt
 import usinas  
-
-
 class UsinaInterface(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -22,7 +20,7 @@ class UsinaInterface(QMainWindow):
         self.setGeometry(100, 100, 500, 400)
 
         # Lista de usinas
-        self.lista_usina = ["Santa Adélia", "Estiva", "Pedra", "Cocal"]
+        self.lista_usina = ["Santa Adélia", "Estiva", "Aralco", "Cocal"]
 
         # Configurar layout
         self.central_widget = QWidget()
@@ -97,8 +95,8 @@ class UsinaInterface(QMainWindow):
                 usinas.santa_adelia(view_usina)
             elif usina == "Estiva":
                 usinas.estiva(view_usina)
-            elif usina == "Pedra":
-                usinas.pedra(view_usina)
+            elif usina == "Aralco":
+                usinas.aralco(view_usina)
             elif usina == "Cocal":
                 usinas.cocal(view_usina)
             else:
