@@ -75,7 +75,7 @@ class UsinaInterface(QMainWindow):
         self.arquivo_combo = QComboBox()
         self.arquivo_combo.setFont(QFont("Segoe UI", 11))
 
-        arquivos_input = [f for f in os.listdir("input") if f.lower().endswith(".csv")]
+        arquivos_input = [f for f in os.listdir("input") if f.lower().endswith(".csv") or f.lower().endswith(".xml") ]
         if not arquivos_input:
             arquivos_input = ["<nenhum arquivo encontrado>"]
 
