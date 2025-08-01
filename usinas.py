@@ -2,16 +2,15 @@
 import pandas as pd
 import numpy as np
 import locale
-import numpy as np
 import csv
 
 #SANTA ADELIA
 def santa_adelia(view_usina):
     #IMPORTANDO BASE DE DADOS, criando um lista bdagro e removendo colunas indesejadas
 
-    lista_bd_agro=['CHAVE',	'CLIENTE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'IRRIGACAO',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST','TAH']
+    lista_bd_agro=['CHAVE',	'SAFRA',	'OBJETIVO',	'TP_PROP',	'FAZENDA',	'SETOR',	'SECAO',	'BLOCO',	'PIVO',	'DESC_FAZ',	'TALHAO',	'VARIEDADE',	'MATURACAO',	'AMBIENTE',	'ESTAGIO',	'GRUPO_DASH',	'GRUPO_NDVI',	'NMRO_CORTE',	'DESC_CANA',	'AREA_BD',	'A_EST_MOAGEM',	'A_COLHIDA',	'A_EST_MUDA',	'A_MUDA',	'TCH_EST',	'TC_EST',	'TCH_REST',	'TC_REST',	'TCH_REAL',	'TC_REAL',	'DT_CORTE',	'DT_ULT_CORTE',	'DT_PLANTIO',	'IDADE_CORTE',	'ATR',	'ATR_EST',	'IRRIGACAO','TAH','TPH','CLIENTE']
     banco_usa = pd.read_xml('input/'+view_usina+'.xml')
-    estagios = pd.read_excel('X:/Sigmagis/VERTICAIS/COLABORADORES/Luan_Faria/MODELOS_BANCO/BANCO-SANTA-ADELIA/ESTAGIOS.xlsx')
+    estagios = pd.read_excel('C:/Users/luan.faria/Desktop/cod_luan/cod/SIGMA/cod/bd_agro_automatico/estagios.xlsx')
     bd_usa = banco_usa.drop(labels=['usina','blocoicol','de_obs','no_corte','categoria','rest','gr_est','fornecedor','municipio','quad','qt_area_prod','qt_area_muda','qt_area_dano','idade_corte','idade_atual','fg_refor_plane','fg_temporario','fg_dano_colheita','fg_meiosi','dt_ocorren','n_rest','id_unidade','updated_at','created_at'], axis=1)
     bd_agro = pd.DataFrame(columns=lista_bd_agro)
 
@@ -89,10 +88,19 @@ def santa_adelia(view_usina):
     bd_agro['DESC_FAZ'] = bd_usa['de_fazenda']
     bd_agro['TALHAO'] = bd_usa['talhao']
     bd_agro['VARIEDADE'] = bd_usa['variedade'] 
-    bd_agro['MATURACAO'] = bd_usa['amb_manejo']
+    
+    bd_agro['MATURACAO'] = bd_usa['maturacao_variedade']
+    #renomear tp_prop
+    bd_agro['MATURACAO'] = bd_agro['MATURACAO'].replace({
+        '1. PRECOCE' : 'PRECOCE',
+        '2. MÉDIA': 'MÉDIA',
+        '3. TARDIA': 'TARDIA'})
     bd_agro['AMBIENTE'] = bd_usa['amb_producao']
+    bd_agro['AMBIENTE'] = bd_agro['AMBIENTE'].fillna('ADEF')
+    bd_agro['AMBIENTE'] = bd_agro['AMBIENTE'].replace({'AGUARDAN. CARTA SOLO':'ADEF', 'ADF':'ADEF'})
+
     bd_agro['IRRIGACAO'] = bd_usa['fg_infr_fertir']
-    bd_agro['ESTAGIO'] = bd_usa['ESTAGIO_24']
+    bd_agro['ESTAGIO'] = bd_usa['ESTAGIO_25']
     bd_agro['GRUPO_DASH'] = bd_usa['GRUPO_DASH'] 
     bd_agro['GRUPO_NDVI'] = bd_usa['GRUPO_NDVI']
     bd_agro['NMRO_CORTE'] = bd_usa['NMRO_CORTE']
@@ -102,27 +110,40 @@ def santa_adelia(view_usina):
     bd_agro['A_COLHIDA'] = np.select([bd_usa['fg_ocorren'] == 'F'], [bd_agro['A_EST_MOAGEM']], default=0)
     bd_agro['A_EST_MUDA'] = bd_usa['area_est_mud']
     bd_agro['A_MUDA'] = np.select([bd_usa['fg_ocorren'] == 'F'], [bd_agro['A_EST_MUDA']], default=0)
-    bd_usa = bd_usa.replace('.',',').astype({'tch_rest': float, 'tch_est': float})
-    bd_agro['TCH_EST'] = np.select([(bd_agro['A_EST_MOAGEM'] > 0)& (bd_usa['tch_rest'].isna()),(bd_agro['A_EST_MOAGEM'] > 0) & (bd_usa['tch_rest'] > 0)],[bd_usa['tch_est'],bd_usa['tch_rest']],default=0)
-    bd_agro['TC_EST'] = bd_agro['TCH_EST'] * bd_agro['A_EST_MOAGEM']
-    bd_agro['TCH_REST'] = np.select([(bd_agro['OBJETIVO'] == 'MOAGEM/MUDA') | (bd_agro['OBJETIVO'] == 'MOAGEM') ], [bd_usa['tch_est']], default=0)
-    bd_agro['TC_REST'] = bd_agro['TCH_REST'] * bd_agro['A_EST_MOAGEM']
+    #bd_usa = bd_usa.replace('.',',').astype({'tch_rest': float, 'tch_est': float})
+    # Aplicando as condições e atribuindo o valor na nova coluna 'OBJETIVO'
+    #bd_agro['TCH_EST'] = np.select([(bd_agro['A_EST_MOAGEM'] > 0)& (bd_usa['tch_rest'].isna()),(bd_agro['A_EST_MOAGEM'] > 0) & (bd_usa['tch_rest'] > 0)],[bd_usa['tch_est'],bd_usa['tch_rest']],default=0)
+    #bd_agro['TC_EST'] = bd_agro['TCH_EST'] * bd_agro['A_EST_MOAGEM']
+    #bd_agro['TCH_REST'] = np.select([(bd_agro['OBJETIVO'] == 'MOAGEM/MUDA') | (bd_agro['OBJETIVO'] == 'MOAGEM') ], [bd_usa['tch_est']], default=0)
+    #bd_agro['TC_REST'] = bd_agro['TCH_REST'] * bd_agro['A_EST_MOAGEM']
+    bd_agro['TCH_EST'] = 0
+    bd_agro['TC_EST'] = 0
+    bd_agro['TCH_REST'] = 0
+    bd_agro['TC_REST'] = 0
     bd_usa['cana_ent'] = bd_usa['cana_ent'].astype(str).str.replace(r'\.', '', regex=True)
     bd_usa['cana_ent'] = bd_usa['cana_ent'].str.replace(',', '.')
     bd_usa['cana_ent'] = pd.to_numeric(bd_usa['cana_ent'], errors='coerce')
     bd_agro['TCH_REAL'] = np.select([bd_usa['fg_ocorren'] == 'F'], [bd_usa['cana_ent']/bd_usa['area_est_col']], default=0)
     bd_agro['TC_REAL'] = bd_agro['TCH_REAL'] * bd_agro['A_COLHIDA']
+
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')  # Para exibir a data em português
     bd_agro['DT_CORTE'] = pd.to_datetime(bd_usa['dt_corte_atual'], format='%d/%m/%Y', errors='coerce')
     bd_agro['DT_ULT_CORTE'] = pd.to_datetime(bd_usa['dt_corte_anterior'], format='%d/%m/%Y', errors='coerce')
     bd_agro['DT_PLANTIO'] = pd.to_datetime(bd_usa['dt_plantio'], format='%d/%m/%Y', errors='coerce')
+
     bd_agro['DT_CORTE'] = bd_agro['DT_CORTE'].dt.date
     bd_agro['DT_ULT_CORTE'] = bd_agro['DT_ULT_CORTE'].dt.date
     bd_agro['DT_PLANTIO'] = bd_agro['DT_PLANTIO'].dt.date
+
     bd_agro['DT_ULT_CORTE'] = np.select([bd_agro['NMRO_CORTE'] != 1], [bd_agro['DT_ULT_CORTE']], default=pd.to_datetime('1900-01-01').date())
     bd_agro['DT_CORTE'] = bd_agro['DT_CORTE'].fillna(pd.to_datetime('1900-01-01').date())
+    # Define a data padrão
+    #data_padrao = pd.to_datetime('1900-01-01').date()
+    # Atualiza DT_CORTE apenas onde A_COLHIDA == 0
+    bd_agro.loc[bd_agro['A_COLHIDA'] == 0, 'DT_CORTE'] =  pd.to_datetime('1900-01-01').date()
     bd_agro['DT_ULT_CORTE'] = bd_agro['DT_ULT_CORTE'].fillna(pd.to_datetime('1900-01-01').date())
     bd_agro['DT_PLANTIO'] = bd_agro['DT_PLANTIO'].fillna(pd.to_datetime('1900-01-01').date())
+
     bd_agro['DT_CORTE'] = pd.to_datetime(bd_agro['DT_CORTE'])
     bd_agro['DT_PLANTIO'] = pd.to_datetime(bd_agro['DT_PLANTIO'])
     bd_agro['DT_ULT_CORTE'] = pd.to_datetime(bd_agro['DT_ULT_CORTE'])
@@ -343,6 +364,14 @@ def aralco(view_usina):
         right_on=coluna_estagios,  # Coluna no estagios
         how='left'
     )
+
+    # Verifica valores que não foram encontrados no depara
+    faltando_estagio = bd_aralco[bd_aralco['ESTAGIO_25'].isna()]
+
+    # Se houver valores ausentes, mostra alerta
+    if not faltando_estagio.empty:
+        print('⚠️ Atenção! Existem valores de "numero_corte" que não possuem correspondente em "estagios.xlsx":')
+        print(faltando_estagio['numero_corte'].unique())
 
     # Removendo a coluna duplicada se necessário
     if coluna_estagios in bd_aralco.columns:
